@@ -19,28 +19,20 @@ repositories {
         }
     }
 
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "CurseForge"
-                url = uri("https://www.cursemaven.com")
-            }
-        }
+    maven {
+        name = "CurseForge"
+        url = uri("https://www.cursemaven.com")
 
-        filter {
+        content {
             includeGroup("curse.maven")
         }
     }
 
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "TerraformersMC"
-                url = uri("https://maven.terraformersmc.com/")
-            }
-        }
+    maven {
+        name = "TerraformersMC"
+        url = uri("https://maven.terraformersmc.com/")
 
-        filter {
+        content {
             includeGroup("dev.emi")
         }
     }
