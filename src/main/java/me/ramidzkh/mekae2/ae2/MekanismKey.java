@@ -76,17 +76,13 @@ public class MekanismKey extends AEKey {
     }
 
     public byte getForm() {
-        if (stack instanceof GasStack) {
-            return GAS;
-        } else if (stack instanceof InfusionStack) {
-            return INFUSION;
-        } else if (stack instanceof PigmentStack) {
-            return PIGMENT;
-        } else if (stack instanceof SlurryStack) {
-            return SLURRY;
-        } else {
-            throw new UnsupportedOperationException();
-        }
+        return switch (stack) {
+            case GasStack ignored -> GAS;
+            case InfusionStack ignored -> INFUSION;
+            case PigmentStack ignored -> PIGMENT;
+            case SlurryStack ignored -> SLURRY;
+            default -> throw new UnsupportedOperationException();
+        };
     }
 
     @Override
@@ -141,17 +137,17 @@ public class MekanismKey extends AEKey {
 
     @Override
     public boolean isTagged(TagKey<?> tag) {
-        if (stack.getChemical() instanceof Gas gas) {
-            return tag.registry().equals(MekanismAPI.GAS_REGISTRY_NAME) && gas.is((TagKey<Gas>) tag);
-        } else if (stack.getChemical() instanceof InfuseType infuse) {
-            return tag.registry().equals(MekanismAPI.INFUSE_TYPE_REGISTRY_NAME) && infuse.is((TagKey<InfuseType>) tag);
-        } else if (stack.getChemical() instanceof Pigment pigment) {
-            return tag.registry().equals(MekanismAPI.PIGMENT_REGISTRY_NAME) && pigment.is((TagKey<Pigment>) tag);
-        } else if (stack.getChemical() instanceof Slurry slurry) {
-            return tag.registry().equals(MekanismAPI.SLURRY_REGISTRY_NAME) && slurry.is((TagKey<Slurry>) tag);
-        } else {
-            throw new UnsupportedOperationException();
-        }
+        return switch (stack.getChemical()) {
+            case Gas gas -> tag.registry().equals(MekanismAPI.GAS_REGISTRY_NAME)
+                    && gas.is((TagKey<Gas>) tag);
+            case InfuseType infuse -> tag.registry().equals(MekanismAPI.INFUSE_TYPE_REGISTRY_NAME)
+                    && infuse.is((TagKey<InfuseType>) tag);
+            case Pigment pigment -> tag.registry().equals(MekanismAPI.PIGMENT_REGISTRY_NAME)
+                    && pigment.is((TagKey<Pigment>) tag);
+            case Slurry slurry -> tag.registry().equals(MekanismAPI.SLURRY_REGISTRY_NAME)
+                    && slurry.is((TagKey<Slurry>) tag);
+            default -> throw new UnsupportedOperationException();
+        };
     }
 
     @Override
