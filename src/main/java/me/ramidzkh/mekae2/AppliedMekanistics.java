@@ -6,10 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
@@ -33,20 +30,12 @@ import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.behaviors.GenericSlotCapacities;
 import appeng.api.client.StorageCellModels;
 import appeng.api.features.P2PTunnelAttunement;
-import appeng.api.implementations.blockentities.IChestOrDrive;
 import appeng.api.parts.RegisterPartCapabilitiesEvent;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.AEKeyTypes;
-import appeng.api.storage.StorageCells;
-import appeng.api.storage.cells.IBasicCellItem;
-import appeng.api.storage.cells.ICellGuiHandler;
-import appeng.api.storage.cells.ICellHandler;
 import appeng.api.upgrades.Upgrades;
 import appeng.core.definitions.AEItems;
 import appeng.core.localization.GuiText;
-import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuLocators;
-import appeng.menu.me.common.MEStorageMenu;
 import appeng.parts.automation.StackWorldBehaviors;
 
 @Mod(AppliedMekanistics.ID)
@@ -122,20 +111,6 @@ public class AppliedMekanistics {
     }
 
     private void initializeModels() {
-        StorageCells.addCellGuiHandler(new ICellGuiHandler() {
-            @Override
-            public boolean isSpecializedFor(ItemStack cell) {
-                return cell.getItem() instanceof IBasicCellItem basicCellItem
-                        && basicCellItem.getKeyType() == MekanismKeyType.TYPE;
-            }
-
-            @Override
-            public void openChestGui(Player player, IChestOrDrive chest, ICellHandler cellHandler, ItemStack cell) {
-                MenuOpener.open(MEStorageMenu.TYPE, player,
-                        MenuLocators.forBlockEntity((BlockEntity) chest));
-            }
-        });
-
         for (var tier : AMItems.Tier.values()) {
             var cell = AMItems.get(tier);
             var portable = AMItems.getPortableCell(tier);

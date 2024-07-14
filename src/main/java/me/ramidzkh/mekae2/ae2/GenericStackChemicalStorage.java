@@ -60,7 +60,7 @@ public abstract sealed class GenericStackChemicalStorage<C extends Chemical<C>, 
     @Override
     public boolean isValid(int tank, S stack) {
         var what = MekanismKey.of(stack);
-        return what == null || inv.isAllowed(what);
+        return what == null || inv.isAllowedIn(tank, what);
     }
 
     @Override

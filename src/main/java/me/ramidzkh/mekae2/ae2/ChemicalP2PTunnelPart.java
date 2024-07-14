@@ -25,7 +25,7 @@ import mekanism.api.chemical.slurry.ISlurryHandler;
 import mekanism.api.chemical.slurry.Slurry;
 import mekanism.api.chemical.slurry.SlurryStack;
 
-import appeng.api.config.PowerUnits;
+import appeng.api.config.PowerUnit;
 import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
 import appeng.items.parts.PartModels;
@@ -140,7 +140,7 @@ public class ChemicalP2PTunnelPart extends MultipleCapabilityP2PTunnelPart<Chemi
             }
 
             if (action == Action.EXECUTE) {
-                part.queueTunnelDrain(PowerUnits.AE, (double) total / MekanismKeyType.TYPE.getAmountPerOperation());
+                part.queueTunnelDrain(PowerUnit.AE, (double) total / MekanismKeyType.TYPE.getAmountPerOperation());
             }
 
             return ChemicalBridge.withAmount(stack, stack.getAmount() - total);
@@ -234,7 +234,7 @@ public class ChemicalP2PTunnelPart extends MultipleCapabilityP2PTunnelPart<Chemi
                 var result = input.get().extractChemical(tank, maxAmount, action);
 
                 if (action.execute()) {
-                    part.queueTunnelDrain(PowerUnits.AE,
+                    part.queueTunnelDrain(PowerUnit.AE,
                             (float) result.getAmount() / MekanismKeyType.TYPE.getAmountPerOperation());
                 }
 

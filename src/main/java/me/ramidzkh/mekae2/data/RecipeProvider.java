@@ -55,9 +55,10 @@ public class RecipeProvider extends net.minecraft.data.recipes.RecipeProvider {
                     .requires(housing)
                     .requires(cellComponent)
                     .unlockedBy("has_cell_component" + tierName, has(cellComponent))
+                    .unlockedBy("has_chemical_housing", has(housing))
                     .save(output);
             ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, AMItems.getPortableCell(tier)::get)
-                    .requires(AEBlocks.CHEST)
+                    .requires(AEBlocks.ME_CHEST)
                     .requires(cellComponent)
                     .requires(AEBlocks.ENERGY_CELL)
                     .requires(housing)
