@@ -11,7 +11,6 @@ import mekanism.api.chemical.IChemicalHandler;
 import appeng.api.config.PowerUnit;
 import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
-import appeng.api.stacks.AEKeyType;
 import appeng.items.parts.PartModels;
 import appeng.parts.p2p.CapabilityP2PTunnelPart;
 import appeng.parts.p2p.P2PModels;
@@ -19,7 +18,7 @@ import appeng.parts.p2p.P2PModels;
 public class ChemicalP2PTunnelPart extends CapabilityP2PTunnelPart<ChemicalP2PTunnelPart, IChemicalHandler> {
 
     private static final P2PModels MODELS = new P2PModels(AppliedMekanistics.id("part/chemical_p2p_tunnel"));
-    private static final IChemicalHandler NULL_FLUID_HANDLER = new NullFluidHandler();
+    private static final IChemicalHandler NULL_CHEMICAL_HANDLER = new NullChemicalHandler();
 
     @PartModels
     public static List<IPartModel> getModels() {
@@ -28,9 +27,9 @@ public class ChemicalP2PTunnelPart extends CapabilityP2PTunnelPart<ChemicalP2PTu
 
     public ChemicalP2PTunnelPart(IPartItem<?> partItem) {
         super(partItem, MekCapabilities.CHEMICAL.block());
-        inputHandler = new InputFluidHandler();
-        outputHandler = new OutputFluidHandler();
-        emptyHandler = NULL_FLUID_HANDLER;
+        inputHandler = new InputChemicalHandler();
+        outputHandler = new OutputChemicalHandler();
+        emptyHandler = NULL_CHEMICAL_HANDLER;
     }
 
     @Override
@@ -38,7 +37,7 @@ public class ChemicalP2PTunnelPart extends CapabilityP2PTunnelPart<ChemicalP2PTu
         return MODELS.getModel(this.isPowered(), this.isActive());
     }
 
-    private class InputFluidHandler implements IChemicalHandler {
+    private class InputChemicalHandler implements IChemicalHandler {
 
         @Override
         public int getChemicalTanks() {
@@ -101,7 +100,7 @@ public class ChemicalP2PTunnelPart extends CapabilityP2PTunnelPart<ChemicalP2PTu
         }
     }
 
-    private class OutputFluidHandler implements IChemicalHandler {
+    private class OutputChemicalHandler implements IChemicalHandler {
 
         @Override
         public int getChemicalTanks() {
@@ -150,7 +149,7 @@ public class ChemicalP2PTunnelPart extends CapabilityP2PTunnelPart<ChemicalP2PTu
 
                 if (action.execute()) {
                     queueTunnelDrain(PowerUnit.FE,
-                            (double) result.getAmount() / AEKeyType.fluids().getAmountPerOperation());
+                            (double) result.getAmount() / MekanismKeyType.TYPE.getAmountPerOperation());
                 }
 
                 return result;
@@ -158,7 +157,7 @@ public class ChemicalP2PTunnelPart extends CapabilityP2PTunnelPart<ChemicalP2PTu
         }
     }
 
-    private static class NullFluidHandler implements IChemicalHandler {
+    private static class NullChemicalHandler implements IChemicalHandler {
         @Override
         public int getChemicalTanks() {
             return 0;
@@ -194,5 +193,4 @@ public class ChemicalP2PTunnelPart extends CapabilityP2PTunnelPart<ChemicalP2PTu
             return ChemicalStack.EMPTY;
         }
     }
-
 }
