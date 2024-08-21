@@ -10,10 +10,6 @@ import net.minecraft.world.item.ItemStack;
 
 import me.ramidzkh.mekae2.MekCapabilities;
 import mekanism.api.Action;
-import mekanism.api.chemical.gas.GasStack;
-import mekanism.api.chemical.infuse.InfusionStack;
-import mekanism.api.chemical.pigment.PigmentStack;
-import mekanism.api.chemical.slurry.SlurryStack;
 
 import appeng.api.behaviors.ContainerItemStrategy;
 import appeng.api.config.Actionable;
@@ -29,16 +25,14 @@ public class ChemicalContainerItemStrategy implements ContainerItemStrategy<Meka
             return null;
         }
 
-        for (var capability : MekCapabilities.HANDLERS) {
-            var handler = stack.getCapability(capability.item());
+        var handler = stack.getCapability(MekCapabilities.CHEMICAL.item());
 
-            if (handler != null) {
-                var chemical = handler.extractChemical(Long.MAX_VALUE, Action.SIMULATE);
-                var key = MekanismKey.of(chemical);
+        if (handler != null) {
+            var chemical = handler.extractChemical(Long.MAX_VALUE, Action.SIMULATE);
+            var key = MekanismKey.of(chemical);
 
-                if (key != null) {
-                    return new GenericStack(key, chemical.getAmount());
-                }
+            if (key != null) {
+                return new GenericStack(key, chemical.getAmount());
             }
         }
 
@@ -50,10 +44,8 @@ public class ChemicalContainerItemStrategy implements ContainerItemStrategy<Meka
     public ItemStack findCarriedContext(Player player, AbstractContainerMenu menu) {
         var carried = menu.getCarried();
 
-        for (var capability : MekCapabilities.HANDLERS) {
-            if (carried.getCapability(capability.item()) != null) {
-                return carried;
-            }
+        if (carried.getCapability(MekCapabilities.CHEMICAL.item()) != null) {
+            return carried;
         }
 
         return null;
@@ -63,10 +55,8 @@ public class ChemicalContainerItemStrategy implements ContainerItemStrategy<Meka
     public @Nullable ItemStack findPlayerSlotContext(Player player, int slot) {
         var carried = player.getInventory().getItem(slot);
 
-        for (var capability : MekCapabilities.HANDLERS) {
-            if (carried.getCapability(capability.item()) != null) {
-                return carried;
-            }
+        if (carried.getCapability(MekCapabilities.CHEMICAL.item()) != null) {
+            return carried;
         }
 
         return null;
@@ -74,86 +64,26 @@ public class ChemicalContainerItemStrategy implements ContainerItemStrategy<Meka
 
     @Override
     public long extract(ItemStack context, MekanismKey what, long amount, Actionable mode) {
-        var stack = what.withAmount(amount);
-        var action = Action.fromFluidAction(mode.getFluidAction());
+        var handler = context.getCapability(MekCapabilities.CHEMICAL.item());
 
-        if (stack instanceof GasStack gas) {
-            var handler = context.getCapability(MekCapabilities.GAS.item());
-
-            if (handler != null) {
-                return handler.extractChemical(gas, action).getAmount();
-            } else {
-                return 0L;
-            }
-        } else if (stack instanceof InfusionStack infusion) {
-            var handler = context.getCapability(MekCapabilities.INFUSION.item());
-
-            if (handler != null) {
-                return handler.extractChemical(infusion, action).getAmount();
-            } else {
-                return 0L;
-            }
-        } else if (stack instanceof PigmentStack pigment) {
-            var handler = context.getCapability(MekCapabilities.PIGMENT.item());
-
-            if (handler != null) {
-                return handler.extractChemical(pigment, action).getAmount();
-            } else {
-                return 0L;
-            }
-        } else if (stack instanceof SlurryStack slurry) {
-            var handler = context.getCapability(MekCapabilities.SLURRY.item());
-
-            if (handler != null) {
-                return handler.extractChemical(slurry, action).getAmount();
-            } else {
-                return 0L;
-            }
-        } else {
-            throw new UnsupportedOperationException();
+        if (handler == null) {
+            return 0L;
         }
+
+        return handler.extractChemical(what.withAmount(amount), Action.fromFluidAction(mode.getFluidAction()))
+                .getAmount();
     }
 
     @Override
     public long insert(ItemStack context, MekanismKey what, long amount, Actionable mode) {
-        var stack = what.withAmount(amount);
-        var action = Action.fromFluidAction(mode.getFluidAction());
+        var handler = context.getCapability(MekCapabilities.CHEMICAL.item());
 
-        if (stack instanceof GasStack gas) {
-            var handler = context.getCapability(MekCapabilities.GAS.item());
-
-            if (handler != null) {
-                return amount - handler.insertChemical(gas, action).getAmount();
-            } else {
-                return 0L;
-            }
-        } else if (stack instanceof InfusionStack infusion) {
-            var handler = context.getCapability(MekCapabilities.INFUSION.item());
-
-            if (handler != null) {
-                return amount - handler.insertChemical(infusion, action).getAmount();
-            } else {
-                return 0L;
-            }
-        } else if (stack instanceof PigmentStack pigment) {
-            var handler = context.getCapability(MekCapabilities.PIGMENT.item());
-
-            if (handler != null) {
-                return amount - handler.insertChemical(pigment, action).getAmount();
-            } else {
-                return 0L;
-            }
-        } else if (stack instanceof SlurryStack slurry) {
-            var handler = context.getCapability(MekCapabilities.SLURRY.item());
-
-            if (handler != null) {
-                return amount - handler.insertChemical(slurry, action).getAmount();
-            } else {
-                return 0L;
-            }
-        } else {
-            throw new UnsupportedOperationException();
+        if (handler == null) {
+            return 0L;
         }
+
+        return amount - handler.insertChemical(what.withAmount(amount), Action.fromFluidAction(mode.getFluidAction()))
+                .getAmount();
     }
 
     @Override

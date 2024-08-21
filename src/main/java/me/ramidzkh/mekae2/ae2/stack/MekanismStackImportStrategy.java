@@ -19,16 +19,12 @@ import appeng.core.AELog;
 @SuppressWarnings("UnstableApiUsage")
 public class MekanismStackImportStrategy implements StackImportStrategy {
 
-    private final BlockCapabilityCache<? extends IChemicalHandler, Direction>[] lookups;
+    private final BlockCapabilityCache<? extends IChemicalHandler, Direction> lookup;
 
     public MekanismStackImportStrategy(ServerLevel level,
             BlockPos fromPos,
             Direction fromSide) {
-        this.lookups = new BlockCapabilityCache[] {
-                BlockCapabilityCache.create(MekCapabilities.GAS.block(), level, fromPos, fromSide),
-                BlockCapabilityCache.create(MekCapabilities.INFUSION.block(), level, fromPos, fromSide),
-                BlockCapabilityCache.create(MekCapabilities.PIGMENT.block(), level, fromPos, fromSide),
-                BlockCapabilityCache.create(MekCapabilities.SLURRY.block(), level, fromPos, fromSide) };
+        this.lookup = BlockCapabilityCache.create(MekCapabilities.CHEMICAL.block(), level, fromPos, fromSide);
     }
 
     @Override
@@ -37,61 +33,59 @@ public class MekanismStackImportStrategy implements StackImportStrategy {
             return false;
         }
 
-        for (var lookup : lookups) {
-            var adjacentHandler = lookup.getCapability();
+        var adjacentHandler = lookup.getCapability();
 
-            if (adjacentHandler == null) {
+        if (adjacentHandler == null) {
+            return false;
+        }
+
+        var remainingTransferAmount = context.getOperationsRemaining()
+                * (long) MekanismKeyType.TYPE.getAmountPerOperation();
+
+        var inv = context.getInternalStorage();
+
+        // Try to find an extractable resource that fits our filter
+        for (var i = 0; i < adjacentHandler.getChemicalTanks() && remainingTransferAmount > 0; i++) {
+            var stack = adjacentHandler.getChemicalInTank(i);
+            var resource = MekanismKey.of(stack);
+
+            if (resource == null
+                    // Regard a filter that is set on the bus
+                    || !context.isInFilter(resource)) {
                 continue;
             }
 
-            var remainingTransferAmount = context.getOperationsRemaining()
-                    * (long) MekanismKeyType.TYPE.getAmountPerOperation();
+            // Check how much of *this* resource we can actually insert into the network, it might be 0
+            // if the cells are partitioned or there's not enough types left, etc.
+            var amountForThisResource = inv.getInventory().insert(resource, remainingTransferAmount,
+                    Actionable.SIMULATE,
+                    context.getActionSource());
 
-            var inv = context.getInternalStorage();
+            // Try to simulate-extract it
+            var amount = adjacentHandler
+                    .extractChemical(resource.withAmount(amountForThisResource), Action.EXECUTE)
+                    .getAmount();
 
-            // Try to find an extractable resource that fits our filter
-            for (var i = 0; i < adjacentHandler.getTanks() && remainingTransferAmount > 0; i++) {
-                var stack = adjacentHandler.getChemicalInTank(i);
-                var resource = MekanismKey.of(stack);
-
-                if (resource == null
-                        // Regard a filter that is set on the bus
-                        || !context.isInFilter(resource)) {
-                    continue;
-                }
-
-                // Check how much of *this* resource we can actually insert into the network, it might be 0
-                // if the cells are partitioned or there's not enough types left, etc.
-                var amountForThisResource = inv.getInventory().insert(resource, remainingTransferAmount,
-                        Actionable.SIMULATE,
+            if (amount > 0) {
+                var inserted = inv.getInventory().insert(resource, amount, Actionable.MODULATE,
                         context.getActionSource());
 
-                // Try to simulate-extract it
-                var amount = adjacentHandler
-                        .extractChemical(resource.withAmount(amountForThisResource), Action.EXECUTE)
-                        .getAmount();
+                if (inserted < amount) {
+                    // Be nice and try to give the overflow back
+                    var leftover = amount - inserted;
+                    leftover = adjacentHandler
+                            .insertChemical(resource.withAmount(leftover), Action.EXECUTE).getAmount();
 
-                if (amount > 0) {
-                    var inserted = inv.getInventory().insert(resource, amount, Actionable.MODULATE,
-                            context.getActionSource());
-
-                    if (inserted < amount) {
-                        // Be nice and try to give the overflow back
-                        var leftover = amount - inserted;
-                        leftover = adjacentHandler
-                                .insertChemical(resource.withAmount(leftover), Action.EXECUTE).getAmount();
-
-                        if (leftover > 0) {
-                            AELog.warn(
-                                    "Extracted %dx%s from adjacent storage and voided it because network refused insert",
-                                    leftover, resource);
-                        }
+                    if (leftover > 0) {
+                        AELog.warn(
+                                "Extracted %dx%s from adjacent storage and voided it because network refused insert",
+                                leftover, resource);
                     }
-
-                    var opsUsed = Math.max(1, inserted / MekanismKeyType.TYPE.getAmountPerOperation());
-                    context.reduceOperationsRemaining(opsUsed);
-                    remainingTransferAmount -= inserted;
                 }
+
+                var opsUsed = Math.max(1, inserted / MekanismKeyType.TYPE.getAmountPerOperation());
+                context.reduceOperationsRemaining(opsUsed);
+                remainingTransferAmount -= inserted;
             }
         }
 

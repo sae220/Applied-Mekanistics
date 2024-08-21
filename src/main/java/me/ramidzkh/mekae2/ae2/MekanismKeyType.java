@@ -3,7 +3,6 @@ package me.ramidzkh.mekae2.ae2;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import com.google.common.collect.Streams;
 import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.HolderLookup;
@@ -52,7 +51,7 @@ public class MekanismKeyType extends AEKeyType {
     }
 
     @Override
-    public MekanismKey loadKeyFromTag(HolderLookup.Provider registries, CompoundTag tag) {
+    public AEKey loadKeyFromTag(HolderLookup.Provider registries, CompoundTag tag) {
         return MekanismKey.fromTag(registries, tag);
     }
 
@@ -64,11 +63,7 @@ public class MekanismKeyType extends AEKeyType {
 
     @Override
     public Stream<TagKey<?>> getTagNames() {
-        return Streams.concat(
-                MekanismAPI.GAS_REGISTRY.getTagNames(),
-                MekanismAPI.INFUSE_TYPE_REGISTRY.getTagNames(),
-                MekanismAPI.PIGMENT_REGISTRY.getTagNames(),
-                MekanismAPI.SLURRY_REGISTRY.getTagNames());
+        return MekanismAPI.CHEMICAL_REGISTRY.getTagNames().map(t -> t);
     }
 
     // Copied from AEFluidKey

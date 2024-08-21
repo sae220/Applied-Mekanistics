@@ -14,7 +14,7 @@ public class AMMenus {
 
     public static final MenuType<MEStorageMenu> PORTABLE_CHEMICAL_CELL_TYPE = MenuTypeBuilder
             .create(MEStorageMenu::new, IPortableTerminal.class)
-            .build("portable_chemical_cell");
+            .build(AppliedMekanistics.id("portable_chemical_cell"));
 
     @SuppressWarnings("RedundantTypeArguments")
     public static void initialize(IEventBus bus) {

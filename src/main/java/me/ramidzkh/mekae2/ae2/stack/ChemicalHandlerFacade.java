@@ -1,7 +1,5 @@
 package me.ramidzkh.mekae2.ae2.stack;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.network.chat.Component;
 
 import me.ramidzkh.mekae2.AMText;
@@ -16,7 +14,7 @@ import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.MEStorage;
 import appeng.core.localization.GuiText;
 
-public record ChemicalHandlerFacade(@Nullable IChemicalHandler[] handlers, boolean extractableOnly,
+public record ChemicalHandlerFacade(IChemicalHandler handler, boolean extractableOnly,
         Runnable changeListener) implements MEStorage {
 
     @Override
@@ -25,14 +23,8 @@ public record ChemicalHandlerFacade(@Nullable IChemicalHandler[] handlers, boole
             return 0;
         }
 
-        var handler = handlers[key.getForm()];
-
-        if (handler == null) {
-            return 0;
-        }
-
-        var inserted = amount - handler.insertChemical(key.withAmount(amount),
-                Action.fromFluidAction(mode.getFluidAction())).getAmount();
+        var inserted = amount - handler
+                .insertChemical(key.withAmount(amount), Action.fromFluidAction(mode.getFluidAction())).getAmount();
 
         if (inserted > 0 && mode == Actionable.MODULATE) {
             if (this.changeListener != null) {
@@ -49,14 +41,8 @@ public record ChemicalHandlerFacade(@Nullable IChemicalHandler[] handlers, boole
             return 0;
         }
 
-        var handler = handlers[key.getForm()];
-
-        if (handler == null) {
-            return 0;
-        }
-
-        var extracted = handler.extractChemical(key.withAmount(amount),
-                Action.fromFluidAction(mode.getFluidAction())).getAmount();
+        var extracted = handler.extractChemical(key.withAmount(amount), Action.fromFluidAction(mode.getFluidAction()))
+                .getAmount();
 
         if (extracted > 0 && mode == Actionable.MODULATE) {
             if (this.changeListener != null) {
@@ -74,26 +60,20 @@ public record ChemicalHandlerFacade(@Nullable IChemicalHandler[] handlers, boole
 
     @Override
     public void getAvailableStacks(KeyCounter out) {
-        for (var handler : handlers) {
-            if (handler == null) {
+        for (var i = 0; i < handler.getChemicalTanks(); i++) {
+            var stack = handler.getChemicalInTank(i);
+            var key = MekanismKey.of(stack);
+
+            if (key == null) {
                 continue;
             }
 
-            for (var i = 0; i < handler.getTanks(); i++) {
-                // Skip resources that cannot be extracted if that filter was enabled
-                var stack = handler.getChemicalInTank(i);
-                var key = MekanismKey.of(stack);
-
-                if (key == null) {
-                    continue;
-                }
-
-                if (extractableOnly && handler.extractChemical(stack, Action.SIMULATE).isEmpty()) {
-                    continue;
-                }
-
-                out.add(key, stack.getAmount());
+            // Skip resources that cannot be extracted if that filter was enabled
+            if (extractableOnly && handler.extractChemical(stack, Action.SIMULATE).isEmpty()) {
+                continue;
             }
+
+            out.add(key, stack.getAmount());
         }
     }
 }

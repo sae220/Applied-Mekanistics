@@ -3,11 +3,14 @@ package me.ramidzkh.mekae2.ae2;
 import java.util.List;
 import java.util.Objects;
 
-import javax.annotation.Nullable;
-
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -22,18 +25,9 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
-import me.ramidzkh.mekae2.util.ChemicalBridge;
 import mekanism.api.MekanismAPI;
 import mekanism.api.chemical.Chemical;
 import mekanism.api.chemical.ChemicalStack;
-import mekanism.api.chemical.gas.Gas;
-import mekanism.api.chemical.gas.GasStack;
-import mekanism.api.chemical.infuse.InfuseType;
-import mekanism.api.chemical.infuse.InfusionStack;
-import mekanism.api.chemical.pigment.Pigment;
-import mekanism.api.chemical.pigment.PigmentStack;
-import mekanism.api.chemical.slurry.Slurry;
-import mekanism.api.chemical.slurry.SlurryStack;
 import mekanism.api.radiation.IRadiationManager;
 
 import appeng.api.stacks.AEKey;
@@ -43,23 +37,31 @@ import appeng.core.AELog;
 public class MekanismKey extends AEKey {
 
     public static final MapCodec<MekanismKey> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            Chemical.BOXED_CODEC.fieldOf("id").forGetter(key -> key.getStack().getChemical()))
+            Codec.withAlternative(Chemical.CODEC, new Codec<>() {
+                @Override
+                public <T> DataResult<Pair<Chemical, T>> decode(DynamicOps<T> ops, T input) {
+                    return ops.getMap(input)
+                            .flatMap(map -> ops.getStringValue(map.get("chemical_type")).flatMap(type -> {
+                                return MekanismAPI.CHEMICAL_REGISTRY.byNameCodec().decode(ops, map.get(type));
+                            }));
+                }
+
+                @Override
+                public <T> DataResult<T> encode(Chemical input, DynamicOps<T> ops, T prefix) {
+                    return DataResult.error(() -> "should not encode");
+                }
+            }).fieldOf("id").forGetter(key -> key.getStack().getChemical()))
             .apply(instance, chemical -> MekanismKey.of(chemical.getStack(1))));
     public static final Codec<MekanismKey> CODEC = MAP_CODEC.codec();
 
-    public static final byte GAS = 0;
-    public static final byte INFUSION = 1;
-    public static final byte PIGMENT = 2;
-    public static final byte SLURRY = 3;
+    private final ChemicalStack stack;
 
-    private final ChemicalStack<?> stack;
-
-    private MekanismKey(ChemicalStack<?> stack) {
+    private MekanismKey(ChemicalStack stack) {
         this.stack = stack;
     }
 
     @Nullable
-    public static MekanismKey of(ChemicalStack<?> stack) {
+    public static MekanismKey of(ChemicalStack stack) {
         if (stack.isEmpty()) {
             return null;
         }
@@ -67,22 +69,12 @@ public class MekanismKey extends AEKey {
         return new MekanismKey(stack.copy());
     }
 
-    public ChemicalStack<?> getStack() {
+    public ChemicalStack getStack() {
         return stack;
     }
 
-    public ChemicalStack<?> withAmount(long amount) {
-        return ChemicalBridge.withAmount(stack, amount);
-    }
-
-    public byte getForm() {
-        return switch (stack) {
-            case GasStack ignored -> GAS;
-            case InfusionStack ignored -> INFUSION;
-            case PigmentStack ignored -> PIGMENT;
-            case SlurryStack ignored -> SLURRY;
-            default -> throw new UnsupportedOperationException();
-        };
+    public ChemicalStack withAmount(long amount) {
+        return stack.copyWithAmount(amount);
     }
 
     @Override
@@ -95,6 +87,7 @@ public class MekanismKey extends AEKey {
         return this;
     }
 
+    @Nullable
     public static MekanismKey fromTag(HolderLookup.Provider registries, CompoundTag tag) {
         var ops = registries.createSerializationContext(NbtOps.INSTANCE);
 
@@ -124,10 +117,7 @@ public class MekanismKey extends AEKey {
 
     @Override
     public void addDrops(long amount, List<ItemStack> drops, Level level, BlockPos pos) {
-        if (stack instanceof GasStack gasStack) {
-            IRadiationManager.INSTANCE.dumpRadiation(GlobalPos.of(level.dimension(), pos),
-                    ChemicalBridge.withAmount(gasStack, amount));
-        }
+        IRadiationManager.INSTANCE.dumpRadiation(GlobalPos.of(level.dimension(), pos), withAmount(amount));
     }
 
     @Override
@@ -137,17 +127,8 @@ public class MekanismKey extends AEKey {
 
     @Override
     public boolean isTagged(TagKey<?> tag) {
-        return switch (stack.getChemical()) {
-            case Gas gas -> tag.registry().equals(MekanismAPI.GAS_REGISTRY_NAME)
-                    && gas.is((TagKey<Gas>) tag);
-            case InfuseType infuse -> tag.registry().equals(MekanismAPI.INFUSE_TYPE_REGISTRY_NAME)
-                    && infuse.is((TagKey<InfuseType>) tag);
-            case Pigment pigment -> tag.registry().equals(MekanismAPI.PIGMENT_REGISTRY_NAME)
-                    && pigment.is((TagKey<Pigment>) tag);
-            case Slurry slurry -> tag.registry().equals(MekanismAPI.SLURRY_REGISTRY_NAME)
-                    && slurry.is((TagKey<Slurry>) tag);
-            default -> throw new UnsupportedOperationException();
-        };
+        // This will just return false for incorrectly cast tags
+        return stack.is((TagKey<Chemical>) tag);
     }
 
     @Override
@@ -162,12 +143,11 @@ public class MekanismKey extends AEKey {
 
     @Override
     public void writeToPacket(RegistryFriendlyByteBuf data) {
-        ChemicalStack.BOXED_STREAM_CODEC.encode(data, stack);
+        ChemicalStack.STREAM_CODEC.encode(data, stack);
     }
 
     public static MekanismKey fromPacket(RegistryFriendlyByteBuf data) {
-        var stack = ChemicalStack.BOXED_STREAM_CODEC.decode(data);
-        return new MekanismKey(stack);
+        return new MekanismKey(ChemicalStack.STREAM_CODEC.decode(data));
     }
 
     @Override

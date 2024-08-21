@@ -22,16 +22,12 @@ import appeng.api.storage.StorageHelper;
 public class MekanismStackExportStrategy implements StackExportStrategy {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MekanismStackExportStrategy.class);
-    private final BlockCapabilityCache<? extends IChemicalHandler, Direction>[] lookups;
+    private final BlockCapabilityCache<? extends IChemicalHandler, Direction> lookup;
 
     public MekanismStackExportStrategy(ServerLevel level,
             BlockPos fromPos,
             Direction fromSide) {
-        this.lookups = new BlockCapabilityCache[] {
-                BlockCapabilityCache.create(MekCapabilities.GAS.block(), level, fromPos, fromSide),
-                BlockCapabilityCache.create(MekCapabilities.INFUSION.block(), level, fromPos, fromSide),
-                BlockCapabilityCache.create(MekCapabilities.PIGMENT.block(), level, fromPos, fromSide),
-                BlockCapabilityCache.create(MekCapabilities.SLURRY.block(), level, fromPos, fromSide) };
+        this.lookup = BlockCapabilityCache.create(MekCapabilities.CHEMICAL.block(), level, fromPos, fromSide);
     }
 
     @Override
@@ -40,7 +36,7 @@ public class MekanismStackExportStrategy implements StackExportStrategy {
             return 0;
         }
 
-        var storage = lookups[mekanismKey.getForm()].getCapability();
+        var storage = lookup.getCapability();
 
         if (storage == null) {
             return 0;
@@ -89,7 +85,7 @@ public class MekanismStackExportStrategy implements StackExportStrategy {
             return 0;
         }
 
-        var storage = lookups[mekanismKey.getForm()].getCapability();
+        var storage = lookup.getCapability();
 
         if (storage == null) {
             return 0;

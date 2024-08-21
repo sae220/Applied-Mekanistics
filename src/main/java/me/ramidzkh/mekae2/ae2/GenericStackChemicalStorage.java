@@ -1,70 +1,52 @@
 package me.ramidzkh.mekae2.ae2;
 
-import me.ramidzkh.mekae2.util.ChemicalBridge;
 import mekanism.api.Action;
-import mekanism.api.chemical.Chemical;
 import mekanism.api.chemical.ChemicalStack;
 import mekanism.api.chemical.IChemicalHandler;
-import mekanism.api.chemical.gas.Gas;
-import mekanism.api.chemical.gas.GasStack;
-import mekanism.api.chemical.gas.IGasHandler;
-import mekanism.api.chemical.infuse.IInfusionHandler;
-import mekanism.api.chemical.infuse.InfuseType;
-import mekanism.api.chemical.infuse.InfusionStack;
-import mekanism.api.chemical.pigment.IPigmentHandler;
-import mekanism.api.chemical.pigment.Pigment;
-import mekanism.api.chemical.pigment.PigmentStack;
-import mekanism.api.chemical.slurry.ISlurryHandler;
-import mekanism.api.chemical.slurry.Slurry;
-import mekanism.api.chemical.slurry.SlurryStack;
 
 import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.config.Actionable;
 
-@SuppressWarnings("UnstableApiUsage")
-public abstract sealed class GenericStackChemicalStorage<C extends Chemical<C>, S extends ChemicalStack<C>>
-        implements IChemicalHandler<C, S> {
+public class GenericStackChemicalStorage implements IChemicalHandler {
 
     private final GenericInternalInventory inv;
-    private final byte form;
 
-    private GenericStackChemicalStorage(GenericInternalInventory inv, byte form) {
+    public GenericStackChemicalStorage(GenericInternalInventory inv) {
         this.inv = inv;
-        this.form = form;
     }
 
     @Override
-    public int getTanks() {
+    public int getChemicalTanks() {
         return inv.size();
     }
 
     @Override
-    public S getChemicalInTank(int tank) {
-        if (inv.getKey(tank) instanceof MekanismKey what && what.getForm() == form) {
-            return (S) what.withAmount(inv.getAmount(tank));
+    public ChemicalStack getChemicalInTank(int tank) {
+        if (inv.getKey(tank) instanceof MekanismKey what) {
+            return what.withAmount(inv.getAmount(tank));
         }
 
-        return getEmptyStack();
+        return ChemicalStack.EMPTY;
     }
 
     @Override
-    public void setChemicalInTank(int tank, S stack) {
+    public void setChemicalInTank(int tank, ChemicalStack stack) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long getTankCapacity(int tank) {
+    public long getChemicalTankCapacity(int tank) {
         return inv.getCapacity(MekanismKeyType.TYPE);
     }
 
     @Override
-    public boolean isValid(int tank, S stack) {
+    public boolean isValid(int tank, ChemicalStack stack) {
         var what = MekanismKey.of(stack);
         return what == null || inv.isAllowedIn(tank, what);
     }
 
     @Override
-    public S insertChemical(int tank, S stack, Action action) {
+    public ChemicalStack insertChemical(int tank, ChemicalStack stack, Action action) {
         var what = MekanismKey.of(stack);
 
         if (what == null) {
@@ -75,51 +57,24 @@ public abstract sealed class GenericStackChemicalStorage<C extends Chemical<C>, 
                 - inv.insert(tank, what, stack.getAmount(), Actionable.of(action.toFluidAction()));
 
         if (remainder == 0) {
-            return getEmptyStack();
+            return ChemicalStack.EMPTY;
         }
 
-        return ChemicalBridge.withAmount(stack, remainder);
+        return stack.copyWithAmount(remainder);
     }
 
     @Override
-    public S extractChemical(int tank, long amount, Action action) {
-        if (!(inv.getKey(tank) instanceof MekanismKey what && what.getForm() == form)) {
-            return getEmptyStack();
+    public ChemicalStack extractChemical(int tank, long amount, Action action) {
+        if (!(inv.getKey(tank) instanceof MekanismKey what)) {
+            return ChemicalStack.EMPTY;
         }
 
         var extracted = inv.extract(tank, what, amount, Actionable.of(action.toFluidAction()));
 
-        if (extracted > 0) {
-            return (S) what.withAmount(extracted);
+        if (extracted == 0) {
+            return ChemicalStack.EMPTY;
         }
 
-        return getEmptyStack();
-    }
-
-    public static final class OfGas extends GenericStackChemicalStorage<Gas, GasStack> implements IGasHandler {
-        public OfGas(GenericInternalInventory inv) {
-            super(inv, MekanismKey.GAS);
-        }
-    }
-
-    public static final class OfInfusion extends GenericStackChemicalStorage<InfuseType, InfusionStack>
-            implements IInfusionHandler {
-        public OfInfusion(GenericInternalInventory inv) {
-            super(inv, MekanismKey.INFUSION);
-        }
-    }
-
-    public static final class OfPigment extends GenericStackChemicalStorage<Pigment, PigmentStack>
-            implements IPigmentHandler {
-        public OfPigment(GenericInternalInventory inv) {
-            super(inv, MekanismKey.PIGMENT);
-        }
-    }
-
-    public static final class OfSlurry extends GenericStackChemicalStorage<Slurry, SlurryStack>
-            implements ISlurryHandler {
-        public OfSlurry(GenericInternalInventory inv) {
-            super(inv, MekanismKey.SLURRY);
-        }
+        return what.withAmount(extracted);
     }
 }

@@ -85,27 +85,15 @@ public class AppliedMekanistics {
     }
 
     private void registerPartCapabilities(RegisterPartCapabilitiesEvent event) {
-        event.register(MekCapabilities.GAS.block(), (part, context) -> part.getGasHandler(),
-                ChemicalP2PTunnelPart.class);
-        event.register(MekCapabilities.INFUSION.block(), (part, context) -> part.getInfuseHandler(),
-                ChemicalP2PTunnelPart.class);
-        event.register(MekCapabilities.PIGMENT.block(), (part, context) -> part.getPigmentHandler(),
-                ChemicalP2PTunnelPart.class);
-        event.register(MekCapabilities.SLURRY.block(), (part, context) -> part.getSlurryHandler(),
+        event.register(MekCapabilities.CHEMICAL.block(), (part, context) -> part.getExposedApi(),
                 ChemicalP2PTunnelPart.class);
     }
 
     private void registerGenericAdapters(RegisterCapabilitiesEvent event) {
         for (var block : BuiltInRegistries.BLOCK) {
             if (event.isBlockRegistered(AECapabilities.GENERIC_INTERNAL_INV, block)) {
-                registerGenericInvAdapter(event, block, MekCapabilities.GAS.block(),
-                        GenericStackChemicalStorage.OfGas::new);
-                registerGenericInvAdapter(event, block, MekCapabilities.INFUSION.block(),
-                        GenericStackChemicalStorage.OfInfusion::new);
-                registerGenericInvAdapter(event, block, MekCapabilities.PIGMENT.block(),
-                        GenericStackChemicalStorage.OfPigment::new);
-                registerGenericInvAdapter(event, block, MekCapabilities.SLURRY.block(),
-                        GenericStackChemicalStorage.OfSlurry::new);
+                registerGenericInvAdapter(event, block, MekCapabilities.CHEMICAL.block(),
+                        GenericStackChemicalStorage::new);
             }
         }
     }
