@@ -15,18 +15,16 @@ import appeng.api.storage.MEStorage;
 
 public class MekanismExternalStorageStrategy implements ExternalStorageStrategy {
 
-    private final BlockCapabilityCache<? extends IChemicalHandler, Direction> lookup;
+    private final BlockCapabilityCache<IChemicalHandler, Direction> cache;
 
-    public MekanismExternalStorageStrategy(ServerLevel level,
-            BlockPos fromPos,
-            Direction fromSide) {
-        this.lookup = BlockCapabilityCache.create(MekCapabilities.CHEMICAL.block(), level, fromPos, fromSide);
+    public MekanismExternalStorageStrategy(ServerLevel level, BlockPos fromPos, Direction fromSide) {
+        this.cache = BlockCapabilityCache.create(MekCapabilities.CHEMICAL.block(), level, fromPos, fromSide);
     }
 
     @Nullable
     @Override
     public MEStorage createWrapper(boolean extractableOnly, Runnable injectOrExtractCallback) {
-        var storage = lookup.getCapability();
+        var storage = cache.getCapability();
 
         if (storage == null) {
             return null;

@@ -22,12 +22,10 @@ import appeng.api.storage.StorageHelper;
 public class MekanismStackExportStrategy implements StackExportStrategy {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MekanismStackExportStrategy.class);
-    private final BlockCapabilityCache<? extends IChemicalHandler, Direction> lookup;
+    private final BlockCapabilityCache<IChemicalHandler, Direction> cache;
 
-    public MekanismStackExportStrategy(ServerLevel level,
-            BlockPos fromPos,
-            Direction fromSide) {
-        this.lookup = BlockCapabilityCache.create(MekCapabilities.CHEMICAL.block(), level, fromPos, fromSide);
+    public MekanismStackExportStrategy(ServerLevel level, BlockPos fromPos, Direction fromSide) {
+        this.cache = BlockCapabilityCache.create(MekCapabilities.CHEMICAL.block(), level, fromPos, fromSide);
     }
 
     @Override
@@ -36,7 +34,7 @@ public class MekanismStackExportStrategy implements StackExportStrategy {
             return 0;
         }
 
-        var storage = lookup.getCapability();
+        var storage = cache.getCapability();
 
         if (storage == null) {
             return 0;
@@ -66,17 +64,21 @@ public class MekanismStackExportStrategy implements StackExportStrategy {
                     Actionable.MODULATE);
 
             wasInserted = extracted
-                    - storage.insertChemical(mekanismKey.withAmount(extracted),
-                            Action.EXECUTE).getAmount();
+                    - storage.insertChemical(mekanismKey.withAmount(extracted), Action.EXECUTE).getAmount();
 
             if (wasInserted < extracted) {
-                LOGGER.error("Storage export issue, voided {}x{}", extracted - wasInserted, what);
-            }
+                // Be nice and try to give the overflow back
+                var leftover = extracted - wasInserted;
+                leftover -= inv.getInventory().insert(what, leftover, Actionable.MODULATE, context.getActionSource());
 
-            return wasInserted;
+                if (leftover > 0) {
+                    LOGGER.error("Storage export: adjacent block unexpectedly refused insert, voided {}x{}", leftover,
+                            what);
+                }
+            }
         }
 
-        return 0;
+        return wasInserted;
     }
 
     @Override
@@ -85,13 +87,14 @@ public class MekanismStackExportStrategy implements StackExportStrategy {
             return 0;
         }
 
-        var storage = lookup.getCapability();
+        var storage = cache.getCapability();
 
         if (storage == null) {
             return 0;
         }
 
-        return amount - storage.insertChemical(mekanismKey.withAmount(amount),
-                Action.fromFluidAction(mode.getFluidAction())).getAmount();
+        return amount
+                - storage.insertChemical(mekanismKey.withAmount(amount), Action.fromFluidAction(mode.getFluidAction()))
+                        .getAmount();
     }
 }

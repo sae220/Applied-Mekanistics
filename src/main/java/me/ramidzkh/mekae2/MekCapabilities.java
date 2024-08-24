@@ -18,8 +18,7 @@ public class MekCapabilities {
     public static final CapSet<IChemicalHandler> CHEMICAL = new CapSet<>(rl("chemical_handler"),
             IChemicalHandler.class);
 
-    public record CapSet<T extends IChemicalHandler>(BlockCapability<T, @Nullable Direction> block,
-            ItemCapability<T, Void> item) {
+    public record CapSet<T>(BlockCapability<T, @Nullable Direction> block, ItemCapability<T, Void> item) {
         public CapSet(ResourceLocation name, Class<T> handlerClass) {
             this(BlockCapability.createSided(name, handlerClass), ItemCapability.createVoid(name, handlerClass));
         }

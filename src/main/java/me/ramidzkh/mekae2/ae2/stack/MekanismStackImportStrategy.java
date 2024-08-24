@@ -16,15 +16,12 @@ import appeng.api.behaviors.StackTransferContext;
 import appeng.api.config.Actionable;
 import appeng.core.AELog;
 
-@SuppressWarnings("UnstableApiUsage")
 public class MekanismStackImportStrategy implements StackImportStrategy {
 
-    private final BlockCapabilityCache<? extends IChemicalHandler, Direction> lookup;
+    private final BlockCapabilityCache<IChemicalHandler, Direction> cache;
 
-    public MekanismStackImportStrategy(ServerLevel level,
-            BlockPos fromPos,
-            Direction fromSide) {
-        this.lookup = BlockCapabilityCache.create(MekCapabilities.CHEMICAL.block(), level, fromPos, fromSide);
+    public MekanismStackImportStrategy(ServerLevel level, BlockPos fromPos, Direction fromSide) {
+        this.cache = BlockCapabilityCache.create(MekCapabilities.CHEMICAL.block(), level, fromPos, fromSide);
     }
 
     @Override
@@ -33,9 +30,9 @@ public class MekanismStackImportStrategy implements StackImportStrategy {
             return false;
         }
 
-        var adjacentHandler = lookup.getCapability();
+        var handler = cache.getCapability();
 
-        if (adjacentHandler == null) {
+        if (handler == null) {
             return false;
         }
 
@@ -45,13 +42,13 @@ public class MekanismStackImportStrategy implements StackImportStrategy {
         var inv = context.getInternalStorage();
 
         // Try to find an extractable resource that fits our filter
-        for (var i = 0; i < adjacentHandler.getChemicalTanks() && remainingTransferAmount > 0; i++) {
-            var stack = adjacentHandler.getChemicalInTank(i);
+        for (var i = 0; i < handler.getChemicalTanks() && remainingTransferAmount > 0; i++) {
+            var stack = handler.getChemicalInTank(i);
             var resource = MekanismKey.of(stack);
 
             if (resource == null
                     // Regard a filter that is set on the bus
-                    || !context.isInFilter(resource)) {
+                    || context.isInFilter(resource) == context.isInverted()) {
                 continue;
             }
 
@@ -62,8 +59,7 @@ public class MekanismStackImportStrategy implements StackImportStrategy {
                     context.getActionSource());
 
             // Try to simulate-extract it
-            var amount = adjacentHandler
-                    .extractChemical(resource.withAmount(amountForThisResource), Action.EXECUTE)
+            var amount = handler.extractChemical(resource.withAmount(amountForThisResource), Action.EXECUTE)
                     .getAmount();
 
             if (amount > 0) {
@@ -73,12 +69,11 @@ public class MekanismStackImportStrategy implements StackImportStrategy {
                 if (inserted < amount) {
                     // Be nice and try to give the overflow back
                     var leftover = amount - inserted;
-                    leftover = adjacentHandler
+                    leftover = handler
                             .insertChemical(resource.withAmount(leftover), Action.EXECUTE).getAmount();
 
                     if (leftover > 0) {
-                        AELog.warn(
-                                "Extracted %dx%s from adjacent storage and voided it because network refused insert",
+                        AELog.warn("Extracted %dx%s from adjacent storage and voided it because network refused insert",
                                 leftover, resource);
                     }
                 }

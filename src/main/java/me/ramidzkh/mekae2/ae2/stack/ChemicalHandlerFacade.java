@@ -27,9 +27,7 @@ public record ChemicalHandlerFacade(IChemicalHandler handler, boolean extractabl
                 .insertChemical(key.withAmount(amount), Action.fromFluidAction(mode.getFluidAction())).getAmount();
 
         if (inserted > 0 && mode == Actionable.MODULATE) {
-            if (this.changeListener != null) {
-                this.changeListener.run();
-            }
+            this.changeListener.run();
         }
 
         return inserted;
@@ -45,9 +43,7 @@ public record ChemicalHandlerFacade(IChemicalHandler handler, boolean extractabl
                 .getAmount();
 
         if (extracted > 0 && mode == Actionable.MODULATE) {
-            if (this.changeListener != null) {
-                this.changeListener.run();
-            }
+            this.changeListener.run();
         }
 
         return extracted;
