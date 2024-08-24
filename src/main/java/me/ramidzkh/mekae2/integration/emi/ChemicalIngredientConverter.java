@@ -14,7 +14,6 @@ public final class ChemicalIngredientConverter implements EmiStackConverter {
 
     @Override
     public Class<?> getKeyType() {
-        // It doesn't really matter, AE2 only checks that no two converters have the same type.
         return Chemical.class;
     }
 
