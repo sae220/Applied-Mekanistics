@@ -17,8 +17,7 @@ public class ItemModelProvider extends net.neoforged.neoforge.client.model.gener
     private static final ResourceLocation STORAGE_CELL_LED = AppEng.makeId("item/storage_cell_led");
     private static final ResourceLocation PORTABLE_CELL_LED = AppEng.makeId("item/portable_cell_led");
     private static final ResourceLocation PORTABLE_CELL_FIELD = AppEng.makeId("item/portable_cell_screen");
-    private static final ResourceLocation OSMIUM_BLOCK = ResourceLocation.fromNamespaceAndPath("mekanism",
-            "block/block_osmium");
+    private static final ResourceLocation P2P_TUNNEL = AppliedMekanistics.id("part/p2p_tunnel_chemical");
 
     public ItemModelProvider(PackOutput output, ExistingFileHelper existingFileHelper) {
         super(output, AppliedMekanistics.ID, existingFileHelper);
@@ -28,7 +27,6 @@ public class ItemModelProvider extends net.neoforged.neoforge.client.model.gener
         existingFileHelper.trackGenerated(STORAGE_CELL_LED, TEXTURE);
         existingFileHelper.trackGenerated(PORTABLE_CELL_LED, TEXTURE);
         existingFileHelper.trackGenerated(PORTABLE_CELL_FIELD, TEXTURE);
-        existingFileHelper.trackGenerated(OSMIUM_BLOCK, TEXTURE);
     }
 
     @Override
@@ -46,9 +44,9 @@ public class ItemModelProvider extends net.neoforged.neoforge.client.model.gener
         }
 
         withExistingParent("item/chemical_p2p_tunnel", P2P_TUNNEL_BASE_ITEM)
-                .texture("type", OSMIUM_BLOCK);
+                .texture("type", P2P_TUNNEL);
         withExistingParent("part/chemical_p2p_tunnel", P2P_TUNNEL_BASE_PART)
-                .texture("type", OSMIUM_BLOCK);
+                .texture("type", P2P_TUNNEL);
     }
 
     private void cell(DeferredItem<?> cell, String background) {
@@ -63,9 +61,5 @@ public class ItemModelProvider extends net.neoforged.neoforge.client.model.gener
                 .texture("layer1", PORTABLE_CELL_LED)
                 .texture("layer2", PORTABLE_CELL_FIELD)
                 .texture("layer3", AppliedMekanistics.id(background));
-    }
-
-    private void flatSingleLayer(DeferredItem<?> item, String texture) {
-        singleTexture(item.getId().getPath(), mcLoc("item/generated"), "layer0", AppliedMekanistics.id(texture));
     }
 }
