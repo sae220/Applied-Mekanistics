@@ -15,7 +15,6 @@ import appeng.api.behaviors.ContainerItemStrategy;
 import appeng.api.config.Actionable;
 import appeng.api.stacks.GenericStack;
 
-@SuppressWarnings("UnstableApiUsage")
 public class ChemicalContainerItemStrategy implements ContainerItemStrategy<MekanismKey, ItemStack> {
 
     @Override
